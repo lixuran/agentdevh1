@@ -50,6 +50,14 @@ import { Touch } from "./ui/touch.ts";
 import { UiManager } from "./ui/ui.ts";
 import { UiManager2 } from "./ui/ui2.ts";
 
+const mvpJoinLoadout = {
+    outfit: "outfitBase",
+    melee: "fists",
+    heal: "heal_basic",
+    boost: "boost_basic",
+    emotes: [] as string[],
+};
+
 export interface Ctx {
     audioManager: AudioManager;
     renderer: Renderer;
@@ -170,7 +178,7 @@ export class Game {
                     joinMessage.useTouch = device.touch;
                     joinMessage.isMobile = device.mobile || window.mobile!;
                     joinMessage.bot = false;
-                    joinMessage.loadout = this.m_config.get("loadout")!;
+                    joinMessage.loadout = mvpJoinLoadout;
                     this.m_sendMessage(net.MsgType.Join, joinMessage, 8192);
                 };
                 this.m_ws.onmessage = (e) => {
@@ -892,18 +900,7 @@ export class Game {
             this.m_map,
             this.m_inputBinds,
         );
-        this.m_emoteBarn.m_update(
-            dt,
-            this.m_localId,
-            this.m_activePlayer,
-            this.teamMode,
-            this.m_deadBodyBarn,
-            this.m_map,
-            this.m_renderer,
-            this.m_input,
-            this.m_inputBinds,
-            this.m_spectating,
-        );
+        this.m_emoteBarn.wheelKeyTriggered = false;
         this.m_touch.m_update(
             dt,
             this.m_activePlayer,
@@ -913,24 +910,8 @@ export class Game {
         );
         this.m_renderer.m_update(dt, this.m_camera, this.m_map, debug?.structures?.layerMasks);
 
-        for (let i = 0; i < this.m_emoteBarn.newPings.length; i++) {
-            const ping = this.m_emoteBarn.newPings[i];
-            const msg = new net.EmoteMsg();
-            msg.type = ping.type;
-            msg.pos = ping.pos;
-            msg.isPing = true;
-            this.m_sendMessage(net.MsgType.Emote, msg, 128);
-        }
-        this.m_emoteBarn.newPings = [];
-        for (let i = 0; i < this.m_emoteBarn.newEmotes.length; i++) {
-            const emote = this.m_emoteBarn.newEmotes[i];
-            const msg = new net.EmoteMsg();
-            msg.type = emote.type;
-            msg.pos = emote.pos;
-            msg.isPing = false;
-            this.m_sendMessage(net.MsgType.Emote, msg, 128);
-        }
-        this.m_emoteBarn.newEmotes = [];
+        this.m_emoteBarn.newPings.length = 0;
+        this.m_emoteBarn.newEmotes.length = 0;
 
         const now = Date.now();
         if (now > this.debugPingTime) {
@@ -1002,7 +983,6 @@ export class Game {
             this.m_map,
             this.m_planeBarn,
         );
-        this.m_emoteBarn.m_render(this.m_camera);
         if (IS_DEV) {
             this.m_debugDisplay.clear();
             if (debug.enabled) {
@@ -1199,16 +1179,6 @@ export class Game {
             this.m_explosionBarn.addExplosion(e.type, e.pos, e.layer);
         }
 
-        // Create emotes and pings
-        for (let i = 0; i < msg.emotes.length; i++) {
-            const e = msg.emotes[i];
-            if (e.isPing) {
-                this.m_emoteBarn.addPing(e, this.m_map.factionMode);
-            } else {
-                this.m_emoteBarn.addEmote(e);
-            }
-        }
-
         // Update planes
         this.m_planeBarn.updatePlanes(msg.planes, this.m_map);
 
@@ -1244,7 +1214,6 @@ export class Game {
                 this.teamMode = msg.teamMode;
                 this.m_localId = msg.playerId;
                 this.m_validateAlpha = true;
-                this.m_emoteBarn.updateEmoteWheel(msg.emotes);
                 if (!msg.started) {
                     this.m_uiManager.setWaitingForPlayers(true);
                 }

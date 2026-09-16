@@ -986,7 +986,9 @@ export class UiManager2 {
             dom.menu.touchStyles.style.display = state.touch ? "flex" : "none";
             dom.menu.aimLine.style.display = state.touch ? "block" : "none";
             dom.ammo.reloadButton.style.display = state.touch ? "block" : "none";
-            dom.emoteButton.style.display = state.touch ? "block" : "none";
+            if (dom.emoteButton) {
+                dom.emoteButton.style.display = "none";
+            }
             if (dom.debugButton) {
                 dom.debugButton.style.display = state.touch ? "block" : "none";
             }

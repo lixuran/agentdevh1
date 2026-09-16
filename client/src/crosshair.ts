@@ -3,6 +3,13 @@ import { CrosshairDefs } from "../../shared/defs/gameObjects/crosshairDefs.ts";
 import type { Crosshair } from "../../shared/utils/loadout.ts";
 import { util } from "../../shared/utils/util.ts";
 
+export const mvpDefaultCrosshair: Crosshair = {
+    type: "crosshair_default",
+    color: 0xffffff,
+    size: "1.00",
+    stroke: "0.00",
+};
+
 function getCrosshairDims(crosshairDef: Crosshair) {
     const crosshairBase = {
         width: 64,
@@ -43,7 +50,8 @@ export const crosshair = {
             cursor,
         });
     },
-    setGameCrosshair: function(crosshairDef: Crosshair) {
+    setGameCrosshair: function(_crosshairDef: Crosshair) {
+        const crosshairDef = mvpDefaultCrosshair;
         // Set game pointer
         crosshair.setElemCrosshair($("#game-area-wrapper"), crosshairDef);
 

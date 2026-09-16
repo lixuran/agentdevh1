@@ -455,7 +455,7 @@ export class Client {
             joinedMsg.playerId = this.player?.__id ?? 0;
             joinedMsg.started = game.started;
             joinedMsg.teamMode = game.teamMode;
-            if (this.player) {
+            if (this.player && !this.game.isMvpMatch) {
                 joinedMsg.emotes = this.player.loadout.emotes;
             }
             msgStream.serializeMsg(net.MsgType.Joined, joinedMsg);
@@ -742,6 +742,7 @@ export class Client {
             }
             case net.MsgType.Emote: {
                 if (!player) break;
+                if (this.game.isMvpMatch) break;
 
                 player.emoteFromMsg(msg as net.EmoteMsg);
                 break;

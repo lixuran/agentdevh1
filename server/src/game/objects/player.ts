@@ -753,6 +753,7 @@ export class Player extends BaseGameObject {
     outfit = "outfitBase";
 
     setOutfit(outfit: string) {
+        if (this.game.isMvpMatch && outfit !== "outfitBase") return;
         if (this.outfit === outfit) return;
         const def = GameObjectDefs.typeToDef(outfit, "outfit");
         if (this.game.map.factionMode) {
@@ -3898,6 +3899,12 @@ export class Player extends BaseGameObject {
                 }
                 break;
             case "outfit":
+                if (this.game.isMvpMatch) {
+                    amountLeft = 1;
+                    pickupMsg.type = net.PickupMsgType.AlreadyEquipped;
+                    break;
+                }
+
                 if (this.game.map.factionMode) {
                     if (def.teamId && this.teamId !== def.teamId) {
                         return;
@@ -4291,6 +4298,17 @@ export class Player extends BaseGameObject {
     }
 
     setLoadout(loadout: net.JoinMsg["loadout"], useDefaultUnlocks?: boolean) {
+        if (this.game.isMvpMatch) {
+            this.setOutfit("outfitBase");
+            this.loadout = {
+                outfit: "outfitBase",
+                heal: "heal_basic",
+                boost: "boost_basic",
+                emotes: [],
+            };
+            return;
+        }
+
         const defaltUnlocks = UnlockDefs.unlock_default.unlocks;
         /**
          * Checks if an item is present in the player's loadout
@@ -4337,6 +4355,7 @@ export class Player extends BaseGameObject {
     }
 
     emoteFromMsg(msg: net.EmoteMsg) {
+        if (this.game.isMvpMatch) return;
         if (this.dead) return;
         if (this.game.map.perkMode && !this.role) return;
         if (this.emoteHardTicker > 0) return;

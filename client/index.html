@@ -103,6 +103,7 @@
           <div id="big-map-collision"></div>
           <div id="big-map-close"></div>
         </div>
+        <template id="legacy-emote-wheels">
         <div id="ui-emotes" class="ui-emote-wheel">
           <div id="ui-emote-middle" class="ui-emote-middle ui-emote-circle ui-emote-parent" data-key="middle" data-id="0">
             <div class="ui-emote ui-emote-bg-circle"></div>
@@ -162,6 +163,7 @@
             <div class="ui-emote-image ui-emote-image-small"></div>
           </div>
         </div>
+        </template>
         <div id="ui-team-indicators" class="js-ui-map-hidden js-desktop-ui-hud-show">
           <div class="ui-team-indicator ui-indicator-main" data-id="0">
             <div class="ui-team-indicator-pos ui-background-yellow"></div>
@@ -308,7 +310,7 @@
               <div class="ui-loot-overlay" style="background: rgba(3,123,0,0.75)"></div>
             </div>
           </div>
-          <div id="ui-emote-button"></div>
+          <!-- Cosmetic emote input is intentionally not mounted in the MVP client. -->
         </div>
         <div id="ui-top-left" class="js-ui-hud-show click-through">
           <div id="ui-team" class="js-ui-mobile-map-hidden">
@@ -749,14 +751,6 @@
           <div class="account-block" style="display: none;">
             <div class="account-details-top">
               <div class="account-details-top-buttons">
-                <div class="account-details-button-wrapper account-details-button-loadout menu-option btn-darken-alt">
-                  <div class="account-details-button">
-                    <div id="loadout-alert-main" class="account-alert-main account-alert"></div>
-                    <div class="account-link account-loadout-link">
-                      <span data-l10n="index-loadout">Loadout</span>
-                    </div>
-                  </div>
-                </div>
                 <div class="account-details-button-wrapper account-details-link-out menu-option btn-darken hide-on-mobile">
                   <div class="account-details-button">
                     <div class="account-link account-stats-link"><span data-l10n="index-my-stats">My Stats</span></div>
@@ -837,7 +831,6 @@
               <div class="play-button-container">
                 <div id="player-options">
                   <input type="text" class="menu-option player-name-input" tabindex="0" placeholder="Enter your name here" data-l10n="index-enter-name-here" id="player-name-input-solo" maxlength="16" />
-                  <a class="btn-darken menu-option player-options-btn" id="btn-customize"></a>
                 </div>
                 <select id="server-select-main" class="server-select menu-option btn-hollow btn-hollow-selected">
                   <optgroup id="server-opts" label="Region" data-l10n="index-region">
@@ -1084,7 +1077,8 @@
           </div>
         </div>
       </div>
-      <!-- Loadouts -->
+      <!-- Legacy cosmetic markup stays compiled for protocol compatibility but is not mounted by MVP. -->
+      <template id="legacy-cosmetic-loadout">
       <div id="modal-customize" class="modal">
         <div class="ad-block-loadouts-left hide-on-mobile">
           <div id="nitro-loadout-vrec" data-fuse="loadout_vrec" style="min-height: 600px;"></div>
@@ -1202,6 +1196,7 @@
           </div>
         </div>
       </div>
+      </template>
       <div id="modal-settings" class="modal">
         <div class="modal-content modal-close">
           <div class="modal-header">

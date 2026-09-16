@@ -217,28 +217,7 @@ export class Account {
         });
     }
 
-    setLoadout(loadout: Loadout) {
-        // Preemptively set the new loadout and revert if the call fail
-        const loadoutPrev = this.loadout;
-        this.loadout = loadout;
-        this.emit("loadout", this.loadout);
-        this.config.set("loadout", loadout);
-
-        if (!helpers.getCookie("app-data")) return;
-
-        this.fetchApi("loadout", { json: { loadout } }, (err, res) => {
-            if (err) {
-                errorLogManager.storeGeneric("account", "set_loadout_error");
-                this.emit("error", "server_error");
-            }
-            if (err || !res.loadout) {
-                this.loadout = loadoutPrev;
-            } else {
-                this.loadout = res.loadout;
-            }
-            this.emit("loadout", this.loadout);
-        });
-    }
+    setLoadout(_loadout: Loadout) {}
 
     setItemStatus(status: ItemStatus, itemTypes: string[]) {
         if (itemTypes.length != 0) {
