@@ -8,7 +8,7 @@ import { util } from "./shared/utils/util.ts";
 
 export const configFileName = "survev-config.hjson";
 
-export function getConfig(isProduction: boolean, dir: string) {
+export function getConfig(isProduction: boolean, dir: string, testMode = false) {
     const isDev = !isProduction;
 
     const config: ConfigType = {
@@ -79,7 +79,9 @@ export function getConfig(isProduction: boolean, dir: string) {
 
     let localConfig: PartialConfig = {};
 
-    if (fs.existsSync(configPath)) {
+    if (testMode) {
+        // Vitest supplies defaults in memory so tests never create local configuration.
+    } else if (fs.existsSync(configPath)) {
         console.log(`Sourcing config ${configPath}`);
         const configText = fs.readFileSync(configPath).toString();
         localConfig = hjson.parse(configText);
