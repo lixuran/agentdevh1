@@ -9,7 +9,7 @@ import { TeamMode } from "../../../../../shared/gameConfig.ts";
 import { zGiveItemParams, zRemoveItemParams } from "../../../../../shared/types/moderation.ts";
 import { serverConfigPath } from "../../../config.ts";
 import { isBehindProxy } from "../../../utils/proxyCheck.ts";
-import { type SaveGameBody, zSetClientThemeBody, zSetGameModeBody, zUpdateRegionBody } from "../../../utils/types.ts";
+import { type SaveGameBody, zSetClientThemeBody, zUpdateRegionBody } from "../../../utils/types.ts";
 import { server } from "../../apiServer.ts";
 import { databaseEnabledMiddleware, privateMiddleware, validateParams } from "../../auth/middleware.ts";
 import { getRedisClient } from "../../cache/index.ts";
@@ -30,36 +30,8 @@ export const PrivateRouter = new Hono<Context>()
         server.updateRegion(regionId, data);
         return c.json({}, 200);
     })
-    .post("/set_game_mode", validateParams(zSetGameModeBody), (c) => {
-        const {
-            index,
-            map_name: mapName,
-            team_mode: teamMode,
-            enabled,
-        } = c.req.valid("json");
-
-        if (!MapDefs[mapName as MapDefKey]) {
-            return c.json({ error: "Invalid map name" }, 400);
-        }
-
-        if (!server.modes[index]) {
-            return c.json({ error: "Invalid mode index" }, 400);
-        }
-
-        server.modes[index] = {
-            mapName: (mapName ?? server.modes[index].mapName) as MapDefKey,
-            teamMode: teamMode ?? server.modes[index].teamMode,
-            enabled: enabled ?? server.modes[index].enabled,
-        };
-
-        saveConfig(serverConfigPath, {
-            modes: server.modes,
-        });
-
-        return c.json(
-            { message: `Set mode ${index} to ${JSON.stringify(server.modes[index])}` },
-            200,
-        );
+    .post("/set_game_mode", (c) => {
+        return c.json({ error: "mvp_mode_locked" }, 409);
     })
     .post("/set_client_theme", validateParams(zSetClientThemeBody), (c) => {
         const { theme } = c.req.valid("json");

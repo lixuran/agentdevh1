@@ -19,6 +19,7 @@ import { server } from "./apiServer.ts";
 import { deleteExpiredSessions, validateSessionToken } from "./auth/index.ts";
 import { rateLimitMiddleware, validateParams } from "./auth/middleware.ts";
 import type { SessionTableSelect, UsersTableSelect } from "./db/schema.ts";
+import { findMvpGame, isMvpModeSelector } from "./mvpMatchmaking.ts";
 import { cleanupOldLogs, isBanned } from "./routes/private/ModerationRouter.ts";
 import { PrivateRouter } from "./routes/private/private.ts";
 import { StatsRouter } from "./routes/stats/StatsRouter.ts";
@@ -96,6 +97,11 @@ app.post("/api/find_game", (c) => {
 });
 
 app.post("/api/find_game_v2", validateParams(zFindGameBody), async (c) => {
+    const body = c.req.valid("json");
+    if (!isMvpModeSelector(body.gameModeIdx)) {
+        return c.json<FindGameResponse>({ type: "error", error: "mvp_mode_only" }, 400);
+    }
+
     const ip = getHonoIp(c, Config.apiServer.proxyIPHeader);
 
     if (!ip) {
@@ -139,13 +145,6 @@ app.post("/api/find_game_v2", validateParams(zFindGameBody), async (c) => {
         return c.json<FindGameResponse>({ type: "error", error: "behind_proxy" });
     }
 
-    const body = c.req.valid("json");
-
-    const mode = server.modes[body.gameModeIdx];
-    if (!mode || !mode.enabled) {
-        return c.json<FindGameResponse>({ type: "error", error: "mode_disabled" });
-    }
-
     if (server.captchaEnabled && !user) {
         if (!body.turnstileToken) {
             return c.json<FindGameResponse>({ type: "error", error: "invalid_captcha" });
@@ -161,21 +160,16 @@ app.post("/api/find_game_v2", validateParams(zFindGameBody), async (c) => {
         }
     }
 
-    const playerData = await getFindGamePlayerData([
-        {
-            joinToken,
-            userId: user?.id || null,
-            ip,
-        },
-    ]);
-
-    const data = await server.findGame({
-        region: body.region,
-        version: body.version,
-        mapName: mode.mapName,
-        teamMode: mode.teamMode,
-        autoFill: true,
-        playerData,
+    const data = await findMvpGame(body, {
+        getPlayerData: () =>
+            getFindGamePlayerData([
+                {
+                    joinToken,
+                    userId: user?.id || null,
+                    ip,
+                },
+            ]),
+        findGame: (request) => server.findGame(request),
     });
 
     if ("error" in data) {

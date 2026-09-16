@@ -6,6 +6,7 @@ import { TeamMenu } from "../teamMenu.ts";
 import { GIT_VERSION } from "../utils/gitRevision.ts";
 import { defaultLogger, ServerLogger } from "../utils/logger.ts";
 import type { FindGamePrivateBody, FindGamePrivateRes } from "../utils/types.ts";
+import { getMvpPublicModes } from "./mvpMatchmaking.ts";
 
 class Region {
     data: (typeof Config)["regions"][string];
@@ -60,7 +61,7 @@ export class ApiServer {
 
     regions: Record<string, Region> = {};
 
-    modes = [...Config.modes];
+    modes = getMvpPublicModes();
     clientTheme = Config.clientTheme;
 
     captchaEnabled = Config.captchaEnabled;

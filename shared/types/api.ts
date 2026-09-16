@@ -44,6 +44,7 @@ export type FindGameError =
     | "invalid_protocol"
     | "invalid_region"
     | "join_game_failed"
+    | "mvp_mode_only"
     | "mode_disabled"
     | "rate_limited";
 
