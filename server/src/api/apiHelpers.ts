@@ -1,8 +1,8 @@
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { inArray } from "drizzle-orm";
 import type { Context } from "hono";
 import { isIP } from "node:net";
 import { db } from "../api/db/index.ts";
-import { userQuestTable, usersTable } from "../api/db/schema.ts";
+import { usersTable } from "../api/db/schema.ts";
 import { Config } from "../config.ts";
 import type { FindGamePrivateBody } from "../utils/types.ts";
 
@@ -49,7 +49,6 @@ export async function getFindGamePlayerData(
         string,
         {
             loadout: FindGamePrivateBody["playerData"][0]["loadout"];
-            quests: FindGamePrivateBody["playerData"][0]["quests"];
         }
     > = {};
 
@@ -58,14 +57,9 @@ export async function getFindGamePlayerData(
             .select({
                 userId: usersTable.id,
                 loadout: usersTable.loadout,
-                quests: sql<
-                    string[]
-                >`array_agg(${userQuestTable.questType}) filter (where ${userQuestTable.questType} is not null)`,
             })
             .from(usersTable)
-            .leftJoin(userQuestTable, and(eq(userQuestTable.userId, usersTable.id)))
-            .where(inArray(usersTable.id, userIds))
-            .groupBy(usersTable.id);
+            .where(inArray(usersTable.id, userIds));
 
         accountData = Object.fromEntries(query.map((r) => [r.userId, r]));
     }
@@ -75,6 +69,5 @@ export async function getFindGamePlayerData(
         userId,
         ip,
         loadout: userId ? accountData[userId]?.loadout : undefined,
-        quests: userId ? (accountData[userId]?.quests ?? []) : [],
     }));
 }

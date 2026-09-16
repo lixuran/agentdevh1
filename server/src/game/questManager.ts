@@ -79,6 +79,7 @@ export class QuestManager {
     }
 
     flushProgress(winningTeamId?: number) {
+        if (this.game.isMvpMatch) return;
         if (!this.player.userId) return;
 
         this.trackSurvivedQuest();
@@ -109,6 +110,7 @@ export class QuestManager {
         payloadKey: K,
         payload: QuestEventPayloads[K],
     ): void {
+        if (this.game.isMvpMatch) return;
         if (!this.player.userId) return;
         for (const quest of this.quests) {
             const def = QuestDefs[quest.id];
@@ -123,6 +125,7 @@ export class QuestManager {
     }
 
     hasQuestWithFilter(filter: FilterTypes): boolean {
+        if (this.game.isMvpMatch) return false;
         return this.quests.some(q => QuestDefs[q.id].filters?.some(f => f.type === filter));
     }
 }

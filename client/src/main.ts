@@ -31,7 +31,6 @@ import { Localization } from "./ui/localization.ts";
 import Menu from "./ui/menu.ts";
 import { MenuModal } from "./ui/menuModal.ts";
 import { LoadoutDisplay } from "./ui/opponentDisplay.ts";
-import { Pass } from "./ui/pass.ts";
 import { ProfileUi } from "./ui/profileUi.ts";
 import { TeamMenu } from "./ui/teamMenu.ts";
 import { loadStaticDomImages } from "./ui/ui2.ts";
@@ -61,7 +60,6 @@ export class Application {
 
     account!: Account;
     loadoutMenu!: LoadoutMenu;
-    pass!: Pass;
     profileUi!: ProfileUi;
 
     pingTest = new PingTest();
@@ -95,8 +93,6 @@ export class Application {
     wasPlayingVideo = false;
     checkedPingTest = false;
     hasFocus = true;
-    newsDisplayed = true;
-
     updateLogoBasedOnLanguage(lang: string) {
         const header = $("#start-row-header");
         if (!header.length) return;
@@ -106,7 +102,6 @@ export class Application {
     constructor() {
         this.account = new Account(this.config);
         this.loadoutMenu = new LoadoutMenu(this.account, this.localization);
-        this.pass = new Pass(this.account, this.loadoutMenu, this.localization);
         this.profileUi = new ProfileUi(
             this.account,
             this.localization,
@@ -266,37 +261,6 @@ export class Application {
                 this.teamMenu.leave();
             });
 
-            // hide pass and show news by default if login is unsupported
-            const loginSupported = !SDK.isAnySDK && proxy.anyLoginSupported();
-            if (loginSupported) {
-                $("#news-wrapper").hide();
-                $("#pass-wrapper").show();
-                this.newsDisplayed = false;
-            } else {
-                $(".right-column-toggle").hide();
-                $("#news-wrapper").show();
-                $("#pass-wrapper").hide();
-                this.newsDisplayed = true;
-            }
-
-            const currentNews = $("#news-current").data("date");
-            const currentNewsTime = new Date(currentNews).getTime();
-            $(".right-column-toggle").on("click", () => {
-                if (this.newsDisplayed) {
-                    $("#news-wrapper").fadeOut(250);
-                    $("#pass-wrapper").fadeIn(250);
-                } else {
-                    this.config.set("lastNewsTimestamp", currentNewsTime);
-                    $(".news-toggle").find(".account-alert").css("display", "none");
-                    $("#news-wrapper").fadeIn(250);
-                    $("#pass-wrapper").fadeOut(250);
-                }
-                this.newsDisplayed = !this.newsDisplayed;
-            });
-            const lastSeenNewsTime = this.config.get("lastNewsTimestamp")!;
-            if (currentNewsTime > lastSeenNewsTime) {
-                $(".news-toggle").find(".account-alert").css("display", "block");
-            }
             this.setDOMFromConfig();
             this.setAppActive(true);
             const domCanvas = document.querySelector<HTMLCanvasElement>("#cvs")!;
@@ -349,9 +313,6 @@ export class Application {
                 this.ambience.onGameStart();
             };
             const onQuit = (errMsg?: GameWsDisconnectReason) => {
-                if (this.game!.m_updatePass) {
-                    this.pass.scheduleUpdatePass(this.game!.m_updatePassDelay);
-                }
                 this.game!.free();
                 this.errorMessage = errMsg ? this.getErrorString(errMsg, "host_closed") : "";
                 this.teamMenu.onGameComplete(this.errorMessage);
@@ -944,9 +905,6 @@ export class Application {
         }
         if (!this.active && this.loadoutMenu.active) {
             this.loadoutMenu.hide();
-        }
-        if (this.active) {
-            this.pass?.update(dt);
         }
         this.input!.flush();
     }

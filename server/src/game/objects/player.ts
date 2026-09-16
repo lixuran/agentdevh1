@@ -1379,7 +1379,7 @@ export class Player extends BaseGameObject {
         this.bot = Config.debug.allowBots && isBot;
         this.isHumanParticipant = isHumanParticipant;
 
-        this.questManager.quests = (questIds ?? []).map((id) => ({
+        this.questManager.quests = (game.isMvpMatch ? [] : questIds ?? []).map((id) => ({
             id,
             delta: 0,
             totalDelta: 0,

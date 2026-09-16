@@ -158,7 +158,15 @@ async function rerollSlot(
     return questType;
 }
 
-export const PassRouter = new Hono<Context>()
+const mvpFeatureDisabled = () => ({ error: "mvp_feature_disabled" });
+
+export const MvpPassRouter = new Hono<Context>()
+    .post("/get_pass", (c) => c.json(mvpFeatureDisabled(), 404))
+    .post("/refresh_quest", (c) => c.json(mvpFeatureDisabled(), 404))
+    .post("/set_pass_unlock", (c) => c.json(mvpFeatureDisabled(), 404));
+
+// Retained for direct legacy use. The MVP API mounts only MvpPassRouter.
+export const LegacyPassRouter = new Hono<Context>()
     .post(
         "/get_pass",
         validateParams(z.object({

@@ -40,7 +40,6 @@ export class Account {
     items: Item[] = [];
     quests: QuestState[] = [];
     pass = {} as PassState;
-
     router: UserRouter;
 
     constructor(public config: ConfigManager) {
@@ -136,7 +135,6 @@ export class Account {
     login() {
         if (helpers.getCookie("app-data")) {
             this.loadProfile();
-            this.getPass(true);
         }
     }
 
@@ -268,48 +266,10 @@ export class Account {
         }
     }
 
-    getPass(tryRefreshQuests: boolean) {
-        this.fetchApi("get_pass", { json: { tryRefreshQuests } }, (err, res) => {
-            this.pass = {} as PassState;
-            this.quests = [];
-            if (err || !res.success) {
-                errorLogManager.storeGeneric("account", "get_pass_error");
-            } else {
-                this.pass = res.pass || {} as PassState;
-                this.quests = res.quests || [];
-                this.quests.sort((a, b) => {
-                    return a.idx - b.idx;
-                });
-                this.emit("pass", this.pass, this.quests, true);
-                if (this.pass?.newItems) {
-                    this.loadProfile();
-                }
-            }
-        });
-    }
+    // Legacy Pass remains compiled but is not mounted in the MVP client.
+    getPass(_tryRefreshQuests: boolean) {}
 
-    setPassUnlock(unlockType: string) {
-        this.fetchApi("set_pass_unlock", { json: { unlockType } }, (err, res) => {
-            if (err || !res.success) {
-                errorLogManager.storeGeneric("account", "set_pass_unlock_error");
-            } else {
-                this.getPass(false);
-            }
-        });
-    }
+    setPassUnlock(_unlockType: string) {}
 
-    refreshQuest(idx: number) {
-        this.fetchApi("refresh_quest", { json: { idx } }, (err, res) => {
-            if (err) {
-                errorLogManager.storeGeneric("account", "refresh_quest_error");
-                return;
-            }
-            if (res.success) {
-                this.getPass(false);
-            } else {
-                // Give the pass UI a chance to update quests
-                this.emit("pass", this.pass!, this.quests, false);
-            }
-        });
-    }
+    refreshQuest(_idx: number) {}
 }

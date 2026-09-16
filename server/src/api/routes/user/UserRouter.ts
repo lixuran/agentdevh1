@@ -18,13 +18,14 @@ import { db } from "../../db/index.ts";
 import { itemsTable, matchDataTable, usersTable } from "../../db/schema.ts";
 import type { Context } from "../../index.ts";
 import { getTimeUntilNextUsernameChange, logoutUser, sanitizeSlug } from "./auth/authUtils.ts";
-import { PassRouter } from "./PassRouter.ts";
+import { MvpPassRouter } from "./PassRouter.ts";
 
 export const UserRouter = new Hono<Context>()
+    // The fixed MVP contract must run before the user route's auth, Zod, or database middleware.
+    .route("/", MvpPassRouter)
     .use(databaseEnabledMiddleware)
     .use(rateLimitMiddleware(40, 60 * 1000))
     .use(authMiddleware)
-    .route("/", PassRouter)
     .post("/profile", async (c) => {
         const user = c.get("user")!;
 
