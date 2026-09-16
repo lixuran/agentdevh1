@@ -59,6 +59,10 @@ export class SiteInfo {
         return availableModes;
     }
 
+    supportsTeamPlay() {
+        return this.loaded && this.info.modes.some((mode) => mode.enabled && mode.teamMode > 1);
+    }
+
     updatePageFromInfo() {
         if (this.loaded) {
             const getGameModeStyles = this.getGameModeStyles();
@@ -94,8 +98,7 @@ export class SiteInfo {
 
                 btn.toggle(style.enabled);
             }
-            const supportsTeam = this.info.modes.some((s) => s.enabled && s.teamMode > 1);
-            $("#btn-join-team, #btn-create-team").toggle(supportsTeam);
+            $("#btn-join-team, #btn-create-team").toggle(this.supportsTeamPlay());
 
             // Region pops
             const pops = this.info.pops;

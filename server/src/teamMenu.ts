@@ -499,6 +499,11 @@ export class TeamMenu {
     }
 
     onOpen(ws: WSContext<SocketData>, userId: string | null, ip: string) {
+        if (!this.allowedGameModeIdxs().length) {
+            ws.close();
+            return;
+        }
+
         const player = new Player(ws, this, userId, ip);
         ws.raw!.player = player;
 
@@ -511,6 +516,13 @@ export class TeamMenu {
     }
 
     onMsg(ws: WSContext<SocketData>, data: string) {
+        // Public MVP exposes no team-capable mode. Reject an existing stale
+        // connection too, rather than allowing it to operate a room.
+        if (!this.allowedGameModeIdxs().length) {
+            ws.close();
+            return;
+        }
+
         let msg: ClientToServerTeamMsg;
         try {
             assert(data.length < 1024);

@@ -621,7 +621,7 @@ export class Application {
     }
 
     tryJoinTeam(create: boolean, url?: string) {
-        if (this.active && this.quickPlayPendingModeIdx === -1) {
+        if (this.siteInfo.supportsTeamPlay() && this.active && this.quickPlayPendingModeIdx === -1) {
             // Join team if the url contains a team address
             let roomUrl = url || window.location.hash.slice(1);
 

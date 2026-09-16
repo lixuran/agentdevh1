@@ -147,7 +147,9 @@ export class PlayerBarn {
         joinMsg: net.JoinMsg,
         joinData: JoinTokenData,
     ) {
-        const result = this.getGroupAndTeam(joinData.groupData);
+        // MVP joins are always independent players. Legacy team-room metadata must
+        // not create, find, or reserve a group for the public solo match.
+        const result = this.game.isMvpMatch ? undefined : this.getGroupAndTeam(joinData.groupData);
         const group = result?.group;
         // solo 50v50 just chooses the smallest team everytime no matter what
         const team = this.game.map.factionMode && !this.game.isTeamMode
@@ -2520,7 +2522,7 @@ export class Player extends BaseGameObject {
         }
 
         if (this._health === 0) {
-            if (!this.downed && this.hasPerk("self_revive")) {
+            if (!this.game.isMvpMatch && !this.downed && this.hasPerk("self_revive")) {
                 this.down(params);
             } else {
                 this.game.modeManager.handlePlayerDeath(this, params);
@@ -3140,6 +3142,7 @@ export class Player extends BaseGameObject {
 
     /** returns player to revive if can revive */
     getPlayerToRevive(): Player | undefined {
+        if (this.game.isMvpMatch) return undefined;
         if (this.actionType != GameConfig.Action.None) return undefined; // action in progress already
 
         if (this.downed && this.hasPerk("self_revive")) return this;
@@ -3177,7 +3180,7 @@ export class Player extends BaseGameObject {
     }
 
     revive(playerToRevive: Player | undefined) {
-        if (!playerToRevive) return;
+        if (this.game.isMvpMatch || !playerToRevive) return;
 
         this.playerBeingRevived = playerToRevive;
         playerToRevive.revivedBy = this;
