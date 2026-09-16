@@ -12,8 +12,12 @@ export const MvpRules = Object.freeze(
     } as const,
 );
 
+export function isMvpMatch(mapName: MapDefKey, teamMode: TeamMode): boolean {
+    return mapName === MvpRules.mapName && teamMode === MvpRules.teamMode;
+}
+
 export function getMatchMaxPlayers(mapName: MapDefKey, teamMode: TeamMode, mapMaxPlayers: number): number {
-    if (mapName === MvpRules.mapName && teamMode === MvpRules.teamMode) {
+    if (isMvpMatch(mapName, teamMode)) {
         return MvpRules.maxPlayers;
     }
 

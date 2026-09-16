@@ -14,6 +14,7 @@ import type { MeleeDef } from "../../../../shared/defs/gameObjects/meleeDefs.ts"
 import { PerkProperties } from "../../../../shared/defs/gameObjects/perkDefs.ts";
 import type { ThrowableDef } from "../../../../shared/defs/gameObjects/throwableDefs.ts";
 import { UnlockDefs } from "../../../../shared/defs/gameObjects/unlockDefs.ts";
+import type { RaidState } from "../../../../shared/defs/raidState.ts";
 import { GameObjectDefs } from "../../../../shared/defs/register.ts";
 import {
     type Action,
@@ -195,6 +196,7 @@ export class PlayerBarn {
             joinMsg.bot,
             joinMsg.isMobile,
             joinData.quests,
+            true,
         );
 
         this.activatePlayer(player, group, team);
@@ -251,6 +253,7 @@ export class PlayerBarn {
         pos?: Vec2;
         name?: string;
         userId?: string;
+        isHumanParticipant?: boolean;
     }): Player {
         let group = params.group;
         let team = params.team;
@@ -274,6 +277,8 @@ export class PlayerBarn {
             params.name ?? `TEST-${String.fromCharCode(65 + this.testPlayerCount++)}`,
             false,
             false,
+            undefined,
+            params.isHumanParticipant ?? true,
         );
         client.player = player;
 
@@ -284,7 +289,7 @@ export class PlayerBarn {
 
     update(dt: number) {
         let sendWinEmotes = false;
-        if (this.game.over && !this.sentWinEmotes) {
+        if (!this.game.isMvpMatch && this.game.over && !this.sentWinEmotes) {
             this.sendWinEmoteTicker -= dt;
             if (this.sendWinEmoteTicker <= 0) {
                 sendWinEmotes = true;
@@ -292,7 +297,7 @@ export class PlayerBarn {
             }
         }
 
-        if (!this.sentMvpQuestUpdate && this.game.over) {
+        if (!this.game.isMvpMatch && !this.sentMvpQuestUpdate && this.game.over) {
             this.sentMvpQuestUpdate = true;
             const mvp = this.factionsMvp;
             mvp?.questManager.trackEvent("be_mvp", { role: mvp.role });
@@ -306,11 +311,11 @@ export class PlayerBarn {
             const player = this.players[i];
             player.update(dt);
 
-            if (!player.dead && sendWinEmotes) {
+            if (!this.game.isMvpMatch && !player.dead && sendWinEmotes) {
                 player.emoteFromSlot(EmoteSlot.Win);
             }
 
-            if (this.game.over && !player.dead && !player.sentGameOverMsg) {
+            if (!this.game.isMvpMatch && this.game.over && !player.dead && !player.sentGameOverMsg) {
                 player.addGameOverMsg();
             }
         }
@@ -318,8 +323,10 @@ export class PlayerBarn {
         // doing this after updates ensures that gameover msgs sent are always accurate
         // if this was done in netsync, players could die while waiting for the next netsync call
         // then the gameover msgs would be inaccurate since theyre based on the current alive count
-        for (let i = 0; i < this.killedPlayers.length; i++) {
-            this.killedPlayers[i].addGameOverMsg();
+        if (!this.game.isMvpMatch) {
+            for (let i = 0; i < this.killedPlayers.length; i++) {
+                this.killedPlayers[i].addGameOverMsg();
+            }
         }
         this.killedPlayers.length = 0;
 
@@ -781,6 +788,8 @@ export class Player extends BaseGameObject {
     aimLayer = 0;
     dead = false;
     downed = false;
+    raidState: RaidState = "active";
+    readonly isHumanParticipant: boolean;
 
     downedCount = 0;
     /**
@@ -1357,6 +1366,7 @@ export class Player extends BaseGameObject {
         isBot: boolean,
         isMobile: boolean,
         questIds?: string[],
+        isHumanParticipant = true,
     ) {
         super(game, pos);
 
@@ -1365,6 +1375,7 @@ export class Player extends BaseGameObject {
         this.client = client;
         this.isMobile = isMobile;
         this.bot = Config.debug.allowBots && isBot;
+        this.isHumanParticipant = isHumanParticipant;
 
         this.questManager.quests = (questIds ?? []).map((id) => ({
             id,
@@ -2998,8 +3009,8 @@ export class Player extends BaseGameObject {
             }
         }
 
-        // Check for game over
-        this.game.checkGameOver();
+        // Transition only after the inherited combat, credit, body, and loot-drop effects.
+        this.game.transitionPlayerRaidState(this, "died");
 
         // send data to parent process
         this.game.updateData();

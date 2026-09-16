@@ -1,5 +1,6 @@
 import type { MapDefKey } from "../../../shared/defs/mapDefs.ts";
-import { getMatchMaxPlayers } from "../../../shared/defs/mvpRules.ts";
+import { getMatchMaxPlayers, isMvpMatch } from "../../../shared/defs/mvpRules.ts";
+import { isTerminalRaidState, type RaidState } from "../../../shared/defs/raidState.ts";
 import { TeamMode } from "../../../shared/gameConfig.ts";
 import type { Loadout } from "../../../shared/utils/loadout.ts";
 import { math } from "../../../shared/utils/math.ts";
@@ -21,6 +22,7 @@ import { LootBarn } from "./objects/loot.ts";
 import { MapIndicatorBarn } from "./objects/mapIndicator.ts";
 import { PlaneBarn } from "./objects/plane.ts";
 import { PlayerBarn } from "./objects/player.ts";
+import type { Player } from "./objects/player.ts";
 import { ProjectileBarn } from "./objects/projectile.ts";
 import { SmokeBarn } from "./objects/smoke.ts";
 import { Profiler } from "./profiler.ts";
@@ -86,6 +88,10 @@ export class Game {
 
     get aliveCount(): number {
         return this.playerBarn.livingPlayers.length;
+    }
+
+    get isMvpMatch(): boolean {
+        return isMvpMatch(this.mapName, this.teamMode);
     }
 
     grid: Grid<GameObject>;
@@ -360,6 +366,20 @@ export class Game {
     checkGameOver() {
         if (this.over) return;
 
+        if (this.isMvpMatch) {
+            const humanParticipants = this.playerBarn.players.filter(player => player.isHumanParticipant);
+            const didGameEnd = this.started
+                && humanParticipants.length > 0
+                && humanParticipants.every(player => isTerminalRaidState(player.raidState));
+
+            if (didGameEnd) {
+                this.over = true;
+                this.stopTicker = 1.8;
+                this.updateData();
+            }
+            return;
+        }
+
         const didGameEnd = this.started && this.modeManager.aliveCount() <= 1;
 
         if (didGameEnd) {
@@ -374,6 +394,16 @@ export class Game {
             this.winningTeamId = this.modeManager.getWinningTeamId();
             this.updateData();
         }
+    }
+
+    transitionPlayerRaidState(player: Player, state: RaidState): boolean {
+        if (isTerminalRaidState(player.raidState) || player.raidState === state) return false;
+
+        player.raidState = state;
+        if (isTerminalRaidState(state)) {
+            this.checkGameOver();
+        }
+        return true;
     }
 
     addJoinTokens(tokens: FindGamePrivateBody["playerData"], autoFill: boolean) {
