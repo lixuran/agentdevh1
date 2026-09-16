@@ -345,6 +345,7 @@ export class Client {
     msgsToSend: Array<{ type: number; msg: net.Msg }> = [];
 
     ack = 0;
+    private _lastRaidTimerRemainingSeconds: number | undefined;
 
     constructor(
         game: Game,
@@ -462,6 +463,16 @@ export class Client {
             const mapStream = game.map.mapStream.stream;
 
             msgStream.stream.writeBytes(mapStream, 0, mapStream.byteIndex);
+        }
+
+        if (
+            game.raidTimerStarted
+            && this._lastRaidTimerRemainingSeconds !== game.raidTimerRemainingSeconds
+        ) {
+            const raidTimerMsg = new net.RaidTimerMsg();
+            raidTimerMsg.remainingSeconds = game.raidTimerRemainingSeconds;
+            msgStream.serializeMsg(net.MsgType.RaidTimer, raidTimerMsg);
+            this._lastRaidTimerRemainingSeconds = raidTimerMsg.remainingSeconds;
         }
 
         if (playerBarn.aliveCountDirty || this._firstUpdate) {

@@ -96,6 +96,7 @@ export class Game {
 
     m_updatePass!: boolean;
     m_updatePassDelay!: number;
+    m_raidTimerRemainingSeconds!: number | undefined;
     m_playing!: boolean;
     m_gameOver!: boolean;
     m_spectating!: boolean;
@@ -313,6 +314,7 @@ export class Game {
         this.m_updateRecvCount = 0;
         this.m_updatePass = false;
         this.m_updatePassDelay = 0;
+        this.m_raidTimerRemainingSeconds = undefined;
         this.m_localId = 0;
         this.m_activeId = 0;
         this.m_activePlayer = null as unknown as Player;
@@ -1580,6 +1582,12 @@ export class Game {
                 new net.UpdatePassMsg().deserialize(stream);
                 this.m_updatePass = true;
                 this.m_updatePassDelay = 0;
+                break;
+            }
+            case net.MsgType.RaidTimer: {
+                const msg = new net.RaidTimerMsg();
+                msg.deserialize(stream);
+                this.m_raidTimerRemainingSeconds = msg.remainingSeconds;
                 break;
             }
             case net.MsgType.AliveCounts: {

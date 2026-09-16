@@ -1,5 +1,5 @@
 import type { MapDefKey } from "../../../shared/defs/mapDefs.ts";
-import { getMatchMaxPlayers, isMvpMatch } from "../../../shared/defs/mvpRules.ts";
+import { getMatchMaxPlayers, isMvpMatch, MvpRules } from "../../../shared/defs/mvpRules.ts";
 import { isTerminalRaidState, type RaidState } from "../../../shared/defs/raidState.ts";
 import { TeamMode } from "../../../shared/gameConfig.ts";
 import type { Loadout } from "../../../shared/utils/loadout.ts";
@@ -63,6 +63,10 @@ export class Game {
     startedTime = 0;
     stopTicker = 0;
     timeRunning = 0;
+    raidTimerElapsedSeconds = 0;
+    raidTimerRemainingSeconds = 0;
+    raidTimerStarted = false;
+    raidTimerExpired = false;
     // used to stop the game if theres no connected players
     noPlayersTicker = 0;
 
@@ -189,8 +193,9 @@ export class Game {
             }
         }
 
+        const startedThisUpdate = !this.started && !this.preventStart && this.modeManager.isGameStarted();
         if (!this.started && !this.preventStart) {
-            this.started = this.modeManager.isGameStarted();
+            this.started = startedThisUpdate;
             if (this.started) {
                 this.gas.advanceGasStage();
             } else {
@@ -209,6 +214,14 @@ export class Game {
                     this.stop();
                     return;
                 }
+            }
+        }
+
+        if (this.isMvpMatch) {
+            if (startedThisUpdate) {
+                this.startRaidTimer();
+            } else if (this.raidTimerStarted) {
+                this.updateRaidTimer(dt);
             }
         }
 
@@ -404,6 +417,33 @@ export class Game {
             this.checkGameOver();
         }
         return true;
+    }
+
+    private startRaidTimer() {
+        this.raidTimerElapsedSeconds = 0;
+        this.raidTimerRemainingSeconds = MvpRules.hardLimitSeconds;
+        this.raidTimerExpired = false;
+        this.raidTimerStarted = true;
+    }
+
+    private updateRaidTimer(dt: number) {
+        this.raidTimerElapsedSeconds += Math.max(0, dt);
+        this.raidTimerRemainingSeconds = Math.min(
+            MvpRules.hardLimitSeconds,
+            Math.ceil(Math.max(0, MvpRules.hardLimitSeconds - this.raidTimerElapsedSeconds)),
+        );
+
+        if (this.raidTimerExpired || this.raidTimerElapsedSeconds < MvpRules.hardLimitSeconds) return;
+
+        this.raidTimerExpired = true;
+        for (const player of this.playerBarn.players) {
+            if (
+                player.isHumanParticipant
+                && (player.raidState === "active" || player.raidState === "extracting")
+            ) {
+                this.transitionPlayerRaidState(player, "timed_out");
+            }
+        }
     }
 
     addJoinTokens(tokens: FindGamePrivateBody["playerData"], autoFill: boolean) {
