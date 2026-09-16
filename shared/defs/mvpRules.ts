@@ -11,3 +11,11 @@ export const MvpRules = Object.freeze(
         extractionChannelSeconds: 10,
     } as const,
 );
+
+export function getMatchMaxPlayers(mapName: MapDefKey, teamMode: TeamMode, mapMaxPlayers: number): number {
+    if (mapName === MvpRules.mapName && teamMode === MvpRules.teamMode) {
+        return MvpRules.maxPlayers;
+    }
+
+    return mapMaxPlayers;
+}

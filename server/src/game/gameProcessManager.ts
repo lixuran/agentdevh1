@@ -1,6 +1,7 @@
 import { type ChildProcess, fork } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import { type MapDefKey, MapDefs } from "../../../shared/defs/mapDefs.ts";
+import { getMatchMaxPlayers } from "../../../shared/defs/mvpRules.ts";
 import type { TeamMode } from "../../../shared/gameConfig.ts";
 import { util } from "../../../shared/utils/util.ts";
 import { Config } from "../config.ts";
@@ -54,6 +55,10 @@ export class GameProcess {
     onCreatedCbs: Array<(_proc: typeof this) => void> = [];
 
     avaliableSlots = 0;
+
+    maxPlayers = 0;
+
+    readonly reservedJoinTokens = new Set<string>();
 
     reusedCount = 0;
 
@@ -109,6 +114,11 @@ export class GameProcess {
                     this.state = ProcState.Idle;
                 }
                 break;
+            case ProcessMsgType.ReleaseJoinToken:
+                if (this.reservedJoinTokens.delete(msg.token)) {
+                    this.avaliableSlots = Math.min(this.maxPlayers, this.avaliableSlots + 1);
+                }
+                break;
         }
     }
 
@@ -130,9 +140,25 @@ export class GameProcess {
         this.state = ProcState.CreatingGame;
 
         const mapDef = MapDefs[this.gameData.mapName as MapDefKey];
-        this.avaliableSlots = mapDef.gameMode.maxPlayers;
+        this.maxPlayers = getMatchMaxPlayers(
+            config.mapName,
+            config.teamMode,
+            mapDef.gameMode.maxPlayers,
+        );
+        this.avaliableSlots = this.maxPlayers;
+        this.reservedJoinTokens.clear();
 
         this.reusedCount++;
+    }
+
+    reserveJoinTokens(tokens: FindGamePrivateBody["playerData"]): boolean {
+        if (tokens.length > this.avaliableSlots) return false;
+
+        this.avaliableSlots -= tokens.length;
+        for (const token of tokens) {
+            this.reservedJoinTokens.add(token.joinToken);
+        }
+        return true;
     }
 
     addJoinTokens(tokens: FindGamePrivateBody["playerData"], autoFill: boolean) {
@@ -141,7 +167,6 @@ export class GameProcess {
             autoFill,
             tokens,
         });
-        this.avaliableSlots--;
     }
 
     addSpectateToken(token: string, data: SpectateTokenData) {
@@ -281,12 +306,11 @@ export class GameProcessManager {
     }
 
     async findGame(body: FindGamePrivateBody): Promise<GameProcess | undefined> {
-        let proc: GameProcess | undefined = this.processes
+        const matchingProc = this.processes
             .filter((proc) => {
                 const game = proc.gameData;
                 return (
                     (game.canJoin || proc.state === ProcState.CreatingGame)
-                    && proc.avaliableSlots > 0
                     && game.teamMode === body.teamMode
                     && game.mapName === body.mapName
                 );
@@ -295,14 +319,12 @@ export class GameProcessManager {
                 return a.gameData.startedTime - b.gameData.startedTime;
             })[0];
 
-        if (!proc) {
-            proc = this.newGame({
-                teamMode: body.teamMode,
-                mapName: body.mapName as MapDefKey,
-            });
-        }
+        const proc = matchingProc ?? this.newGame({
+            teamMode: body.teamMode,
+            mapName: body.mapName as MapDefKey,
+        });
 
-        if (!proc) {
+        if (!proc || !proc.reserveJoinTokens(body.playerData)) {
             return undefined;
         }
 

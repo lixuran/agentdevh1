@@ -214,7 +214,7 @@ export class ClientBarn {
                 this.game.logger.warn("Client tried to join without or with expired join token");
                 socket.close("invalid_token");
                 if (joinData) {
-                    this.game.joinTokens.delete(joinMsg.joinToken);
+                    this.game.expireJoinToken(joinMsg.joinToken);
                 }
                 return;
             }

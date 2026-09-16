@@ -1,4 +1,5 @@
 import type { MapDefKey } from "../../../shared/defs/mapDefs.ts";
+import { getMatchMaxPlayers } from "../../../shared/defs/mvpRules.ts";
 import { TeamMode } from "../../../shared/gameConfig.ts";
 import type { Loadout } from "../../../shared/utils/loadout.ts";
 import { math } from "../../../shared/utils/math.ts";
@@ -162,6 +163,7 @@ export class Game {
     update(dt?: number) {
         if (this.stopped) return;
         this.profiler.flush();
+        this.expireJoinTokens();
 
         const now = performance.now();
         if (!this.now) this.now = now;
@@ -345,7 +347,11 @@ export class Game {
 
     get canJoin(): boolean {
         return (
-            this.aliveCount < this.map.mapDef.gameMode.maxPlayers
+            this.aliveCount < getMatchMaxPlayers(
+                    this.mapName,
+                    this.teamMode,
+                    this.map.mapDef.gameMode.maxPlayers,
+                )
             && !this.over
             && this.startedTime < 60
         );
@@ -399,6 +405,25 @@ export class Game {
             data,
         });
     }
+
+    expireJoinToken(token: string, now = Date.now()): boolean {
+        const joinToken = this.joinTokens.get(token);
+        if (!joinToken || joinToken.expiresAt >= now) return false;
+
+        this.joinTokens.delete(token);
+        if (joinToken.type === "join") {
+            this.onJoinTokenExpired(token);
+        }
+        return true;
+    }
+
+    expireJoinTokens(now = Date.now()) {
+        for (const token of this.joinTokens.keys()) {
+            this.expireJoinToken(token, now);
+        }
+    }
+
+    protected onJoinTokenExpired(_token: string) {}
 
     stop() {
         if (this.stopped) return;

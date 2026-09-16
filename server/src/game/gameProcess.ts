@@ -119,6 +119,13 @@ async function sendQuestProgress(userId: string, progress: Array<{ id: string; d
  * Implements methods only used when the game is actually running on a server
  */
 class ServerGame extends Game {
+    protected override onJoinTokenExpired(token: string) {
+        sendMsg({
+            type: ProcessMsgType.ReleaseJoinToken,
+            token,
+        });
+    }
+
     override updateData() {
         sendMsg({
             type: ProcessMsgType.UpdateData,

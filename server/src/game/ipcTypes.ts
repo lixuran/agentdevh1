@@ -27,6 +27,7 @@ export enum ProcessMsgType {
     UpdateData,
     AddJoinToken,
     AddSpectateToken,
+    ReleaseJoinToken,
 }
 
 export interface CreateGameMsg {
@@ -55,9 +56,15 @@ export interface AddSpectateTokenMsg {
     data: SpectateTokenData;
 }
 
+export interface ReleaseJoinTokenMsg {
+    type: ProcessMsgType.ReleaseJoinToken;
+    token: string;
+}
+
 export type ProcessMsg =
     | CreateGameMsg
     | KeepAliveMsg
     | UpdateDataMsg
     | AddJoinTokenMsg
-    | AddSpectateTokenMsg;
+    | AddSpectateTokenMsg
+    | ReleaseJoinTokenMsg;
