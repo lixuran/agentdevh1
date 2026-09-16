@@ -7,7 +7,9 @@ This repository forks Survev to build a desktop-browser, top-down, solo extracti
 Survev remains the technical foundation: TypeScript, PixiJS rendering, binary WebSocket gameplay, server-authoritative match processes, Hono API routes, PostgreSQL/Drizzle persistence, Redis, and Vite. Adapt the foundation; do not replace it with a new game engine or microservice architecture.
 
 ## Documents
-Read the  _docs/process.md:  how work is organized , at the start of each session,or after compact. 
+Read [`_docs/process.md`](_docs/process.md) at the start of each session and
+after context compaction. It defines the issue, worktree, QA, and integration
+workflow.
 
 Read these documents before changing product behavior or architecture:
 
@@ -154,9 +156,21 @@ Do not deploy, alter a remote database, change production secrets, or restart re
 - Do not use `git reset --hard`, force-push, or destructive database commands.
 - Preserve `survev-upstream` as the read-only upstream remote. Push project work only to `origin`.
 
+### Workflow Git Authority
+
+For work launched through `_docs/process.md`, the orchestrator has standing
+authority to create focused commits, push assigned issue branches, rebase them
+as the process directs, merge QA-passed branches into `master`, push `master`,
+and close the corresponding GitHub issue. It must first run the required
+review and validation, follow the documented merge queue, and report every
+result. This authority never permits force-pushes, `git reset --hard`,
+rewriting published history, or pushes outside the assigned project workflow.
+
 ## Git and GitHub
 
 - The public project repository is `https://github.com/lixuran/agentdevh1`.
 - Use GitHub Issues as the backlog; link implementation changes to the issue they address.
 - Do not commit generated output, `node_modules/`, `dist/`, local database files, `survev-config.hjson`, environment files, or `.ua/` analysis artifacts.
-- Do not commit or push unless the user explicitly asks for it.
+- For a GitHub issue session launched under `_docs/process.md`, commit and push
+  only the assigned issue branch as that process directs. Never merge, push
+  `master`, or force-push unless the user explicitly asks for it.
