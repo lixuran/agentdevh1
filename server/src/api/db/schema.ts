@@ -1,6 +1,9 @@
+import { sql } from "drizzle-orm";
 import {
     bigint,
     boolean,
+    check,
+    customType,
     index,
     integer,
     json,
@@ -15,6 +18,12 @@ import {
 import { TeamMode } from "../../../../shared/gameConfig.ts";
 import { ItemStatus, type Loadout, loadout } from "../../../../shared/utils/loadout.ts";
 
+const citext = customType<{ data: string; driverData: string }>({
+    dataType() {
+        return "citext";
+    },
+});
+
 export const sessionTable = pgTable("session", {
     id: text("id").primaryKey(),
     userId: text("user_id")
@@ -28,25 +37,35 @@ export const sessionTable = pgTable("session", {
 
 export type SessionTableSelect = typeof sessionTable.$inferSelect;
 
-export const usersTable = pgTable("users", {
-    id: text("id").notNull().primaryKey(),
-    authId: text("auth_id").notNull(),
-    slug: text("slug").notNull().unique(),
-    banned: boolean("banned").notNull().default(false),
-    banReason: text("ban_reason").notNull().default(""),
-    bannedBy: text("banned_by").notNull().default(""),
-    username: text("username").notNull().default(""),
-    usernameSet: boolean("username_set").notNull().default(false),
-    userCreated: timestamp("user_created", { withTimezone: true }).notNull().defaultNow(),
-    lastUsernameChangeTime: timestamp("last_username_change_time"),
-    linked: boolean("linked").notNull().default(false),
-    linkedGoogle: boolean("linked_google").notNull().default(false),
-    linkedDiscord: boolean("linked_discord").notNull().default(false),
-    loadout: json("loadout")
-        .notNull()
-        .default(loadout.validate({} as Loadout))
-        .$type<Loadout>(),
-});
+export const usersTable = pgTable(
+    "users",
+    {
+        id: text("id").notNull().primaryKey(),
+        authId: text("auth_id").notNull(),
+        email: citext("email"),
+        passwordHash: text("password_hash"),
+        currency: bigint("currency", { mode: "bigint" }).notNull().default(0n),
+        slug: text("slug").notNull().unique(),
+        banned: boolean("banned").notNull().default(false),
+        banReason: text("ban_reason").notNull().default(""),
+        bannedBy: text("banned_by").notNull().default(""),
+        username: text("username").notNull().default(""),
+        usernameSet: boolean("username_set").notNull().default(false),
+        userCreated: timestamp("user_created", { withTimezone: true }).notNull().defaultNow(),
+        lastUsernameChangeTime: timestamp("last_username_change_time"),
+        linked: boolean("linked").notNull().default(false),
+        linkedGoogle: boolean("linked_google").notNull().default(false),
+        linkedDiscord: boolean("linked_discord").notNull().default(false),
+        loadout: json("loadout")
+            .notNull()
+            .default(loadout.validate({} as Loadout))
+            .$type<Loadout>(),
+    },
+    (table) => [
+        uniqueIndex("users_email_unique").on(table.email),
+        check("users_currency_non_negative", sql`${table.currency} >= 0`),
+    ],
+);
 
 export type UsersTableInsert = typeof usersTable.$inferInsert;
 export type UsersTableSelect = typeof usersTable.$inferSelect;
